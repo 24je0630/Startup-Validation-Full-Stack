@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { IDEA_CATEGORIES } from '@/lib/constants';
 
 export const signupSchema = z.object({
   name: z
@@ -18,5 +19,24 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const createIdeaSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(3, 'Title must be at least 3 characters')
+    .max(120, 'Title must be under 120 characters'),
+  description: z
+    .string()
+    .trim()
+    .min(20, 'Description must be at least 20 characters')
+    .max(5000, 'Description must be under 5000 characters'),
+  category: z.enum(IDEA_CATEGORIES).optional().nullable(),
+  tags: z
+    .array(z.string().trim().min(1).max(24))
+    .max(5, 'Add at most 5 tags')
+    .default([]),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type CreateIdeaInput = z.infer<typeof createIdeaSchema>;

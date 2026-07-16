@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
+import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/jwt';
 
 // Routes that require an authenticated session. Extend this list as future
 // phases add idea posting, team management, etc.

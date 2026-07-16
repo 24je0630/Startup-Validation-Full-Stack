@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
+import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/jwt';
 
 /** Public-safe user shape — password hash is never included. */
 export type PublicUser = {

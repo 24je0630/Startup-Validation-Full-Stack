@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { verifyPassword, signSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { verifyPassword } from '@/lib/password';
+import { signSessionToken, SESSION_COOKIE_NAME } from '@/lib/jwt';
 import { loginSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {

@@ -19,7 +19,7 @@ have more than one phase to track) for what's done.
 
 - [x] Phase 1 — Project setup
 - [x] Phase 2 — Authentication
-- [ ] Phase 3 — Idea posting
+- [x] Phase 3 — Idea posting
 - [ ] Phase 4 — Voting & credits
 - [ ] Phase 5 — Feedback system
 - [ ] Phase 6 — Team formation
@@ -71,6 +71,10 @@ Credentials-based auth using signed JWTs in an **httpOnly cookie**
 the same verification code works in both Route Handlers and Edge
 `middleware.ts`.
 
+- `src/lib/jwt.ts` — edge-safe: cookie name, JWT sign/verify (`jose`).
+  Imported by `middleware.ts`, so it's kept free of Node-only dependencies.
+- `src/lib/password.ts` — Node-only: bcrypt hash/verify. Used exclusively by
+  the signup/login Route Handlers, never by middleware.
 - `POST /api/auth/signup` — create account, hash password (bcrypt), issue cookie
 - `POST /api/auth/login` — verify credentials, issue cookie
 - `POST /api/auth/logout` — clear cookie
@@ -86,6 +90,18 @@ than a third-party OAuth flow. A small, explicit JWT/cookie layer gives full
 control over the session shape with no adapter config, at the cost of us
 owning what NextAuth would otherwise handle (CSRF hardening, provider
 plumbing) — worth revisiting if/when social login is added.
+
+## Ideas
+
+- `GET /api/ideas?page=1` — public, paginated (20/page), newest first, includes author name
+- `POST /api/ideas` — requires auth; validated with the shared `createIdeaSchema`
+- `GET /api/ideas/[id]` — public, 404s for missing or non-public ideas
+- `/ideas` and `/ideas/[id]` are Server Components that query Prisma directly
+  rather than calling the API routes above — the API exists for external/
+  client consumers, but a Server Component hitting its own HTTP API is pure
+  overhead
+- `/ideas/new` is protected by `middleware.ts` (redirects to `/login`) and by
+  a server-side check in the API route itself
 
 ## Folder structure
 

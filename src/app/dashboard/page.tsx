@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getCurrentUser } from '@/lib/session';
 import { LogoutButton } from '@/components/LogoutButton';
 
@@ -23,6 +24,21 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <LogoutButton />
+      </div>
+
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/ideas"
+          className="rounded border border-line px-4 py-2 font-mono text-xs uppercase tracking-widest text-graphite transition hover:border-signal hover:text-signal"
+        >
+          Browse ideas
+        </Link>
+        <Link
+          href="/ideas/new"
+          className="rounded bg-signal px-4 py-2 font-mono text-xs uppercase tracking-widest text-ink transition hover:bg-signal-dim"
+        >
+          Post an idea
+        </Link>
       </div>
 
       <div className="signal-divider my-8 w-full" />

@@ -19,8 +19,14 @@ export default function HomePage() {
       </p>
       <div className="mt-10 flex flex-wrap items-center gap-4">
         <Link
-          href="/signup"
+          href="/ideas"
           className="rounded bg-signal px-5 py-2.5 font-medium text-ink transition hover:bg-signal-dim"
+        >
+          Browse ideas
+        </Link>
+        <Link
+          href="/signup"
+          className="rounded border border-line px-5 py-2.5 font-medium text-paper transition hover:border-signal"
         >
           Create account
         </Link>
@@ -34,9 +40,9 @@ export default function HomePage() {
 
       <div className="mt-8 flex items-center gap-4 font-mono text-xs text-graphite">
         <span className="rounded border border-line px-3 py-1">
-          phase 2 — authentication
+          phase 3 — idea posting
         </span>
-        <span>ideas · voting · credits · analytics — coming next</span>
+        <span>voting · credits · analytics — coming next</span>
       </div>
     </main>
   );

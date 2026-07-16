@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { hashPassword, signSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { hashPassword } from '@/lib/password';
+import { signSessionToken, SESSION_COOKIE_NAME } from '@/lib/jwt';
 import { signupSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days — keep in sync with TOKEN_EXPIRY in lib/auth.ts
+      maxAge: 60 * 60 * 24 * 7, // 7 days — keep in sync with TOKEN_EXPIRY in lib/jwt.ts
     });
     return response;
   } catch (error) {

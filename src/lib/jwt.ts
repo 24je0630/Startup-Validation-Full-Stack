@@ -1,5 +1,10 @@
-import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
+
+// jose is edge-runtime compatible, which matters because this module is
+// imported by middleware.ts (runs on the Edge runtime) as well as regular
+// Node.js Route Handlers. Keep this file free of Node-only dependencies
+// (like bcryptjs, which lives in lib/password.ts instead) so the edge
+// bundle stays lean and doesn't pull in code it will never use.
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -15,19 +20,6 @@ export type SessionPayload = {
   userId: string;
   email: string;
 };
-
-/** Hash a plaintext password for storage. Never store plaintext passwords. */
-export async function hashPassword(plainText: string): Promise<string> {
-  return bcrypt.hash(plainText, 10);
-}
-
-/** Compare a plaintext password against a stored bcrypt hash. */
-export async function verifyPassword(
-  plainText: string,
-  hash: string
-): Promise<boolean> {
-  return bcrypt.compare(plainText, hash);
-}
 
 /** Sign a short-lived session JWT for the given user. */
 export async function signSessionToken(payload: SessionPayload): Promise<string> {
