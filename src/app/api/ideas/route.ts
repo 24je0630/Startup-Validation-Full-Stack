@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { createIdeaSchema } from '@/lib/validation';
+import { getIdeaStatsMap } from '@/lib/ideaStats';
 
 const PAGE_SIZE = 20;
 
@@ -16,9 +17,10 @@ const IDEA_LIST_SELECT = {
   author: { select: { id: true, name: true } },
 } as const;
 
-/** GET /api/ideas — public, paginated, newest first. */
+/** GET /api/ideas — public, paginated, newest first, includes vote/funding stats. */
 export async function GET(request: NextRequest) {
   const page = Math.max(1, Number(request.nextUrl.searchParams.get('page')) || 1);
+  const currentUser = await getCurrentUser();
 
   const [ideas, total] = await Promise.all([
     prisma.idea.findMany({
@@ -31,8 +33,13 @@ export async function GET(request: NextRequest) {
     prisma.idea.count({ where: { isPublic: true } }),
   ]);
 
+  const statsMap = await getIdeaStatsMap(
+    ideas.map((idea) => idea.id),
+    currentUser?.id
+  );
+
   return NextResponse.json({
-    ideas,
+    ideas: ideas.map((idea) => ({ ...idea, stats: statsMap.get(idea.id) })),
     pagination: {
       page,
       pageSize: PAGE_SIZE,

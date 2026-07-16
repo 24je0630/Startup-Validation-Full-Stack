@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/session';
+import { getIdeaStatsMap } from '@/lib/ideaStats';
 import { IdeaCard } from '@/components/IdeaCard';
 
 // Server Components can hit the database directly — this page queries Prisma
@@ -8,20 +10,28 @@ import { IdeaCard } from '@/components/IdeaCard';
 // The API route still exists and is fully functional for external/client
 // consumers (e.g. the "load more" pagination we'll wire up later).
 export default async function IdeasPage() {
-  const ideas = await prisma.idea.findMany({
-    where: { isPublic: true },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      tags: true,
-      category: true,
-      createdAt: true,
-      author: { select: { name: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-  });
+  const [ideas, currentUser] = await Promise.all([
+    prisma.idea.findMany({
+      where: { isPublic: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        tags: true,
+        category: true,
+        createdAt: true,
+        author: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
+    getCurrentUser(),
+  ]);
+
+  const statsMap = await getIdeaStatsMap(
+    ideas.map((idea) => idea.id),
+    currentUser?.id
+  );
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-16">
@@ -60,7 +70,12 @@ export default async function IdeasPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {ideas.map((idea) => (
-            <IdeaCard key={idea.id} {...idea} />
+            <IdeaCard
+              key={idea.id}
+              {...idea}
+              stats={statsMap.get(idea.id)!}
+              isLoggedIn={Boolean(currentUser)}
+            />
           ))}
         </div>
       )}

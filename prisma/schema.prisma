@@ -21,6 +21,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   ideas Idea[]
+  votes Vote[]
 
   @@map("users")
 }
@@ -38,7 +39,27 @@ model Idea {
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId String
 
+  votes Vote[]
+
   @@index([authorId])
   @@index([createdAt])
   @@map("ideas")
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  value     Int // 1 = upvote, -1 = downvote — enforced at the application layer
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId String
+
+  // One vote per user per idea. Also gives us the O(1) lookup the
+  // create/update/toggle-off logic in POST /api/votes relies on.
+  @@unique([userId, ideaId])
+  @@index([ideaId])
+  @@map("votes")
 }

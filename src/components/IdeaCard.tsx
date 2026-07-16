@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { VoteButtons } from '@/components/VoteButtons';
 
 type IdeaCardProps = {
   id: string;
@@ -8,6 +9,11 @@ type IdeaCardProps = {
   tags: string[];
   createdAt: Date | string;
   author: { name: string };
+  stats: {
+    score: number;
+    userVote: 1 | -1 | null;
+  };
+  isLoggedIn: boolean;
 };
 
 function truncate(text: string, maxLength: number) {
@@ -23,44 +29,56 @@ export function IdeaCard({
   tags,
   createdAt,
   author,
+  stats,
+  isLoggedIn,
 }: IdeaCardProps) {
   return (
-    <Link
-      href={`/ideas/${id}`}
-      className="group block rounded border border-line p-6 transition hover:border-signal"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display text-xl font-bold text-paper group-hover:text-signal">
-          {title}
-        </h2>
-        {category && (
-          <span className="shrink-0 rounded border border-line px-2.5 py-1 font-mono text-xs uppercase tracking-widest text-graphite">
-            {category}
-          </span>
-        )}
-      </div>
+    <div className="rounded border border-line p-6 transition hover:border-signal/60">
+      <div className="flex gap-4">
+        <VoteButtons
+          ideaId={id}
+          initialScore={stats.score}
+          initialUserVote={stats.userVote}
+          isLoggedIn={isLoggedIn}
+        />
 
-      <p className="mt-3 text-sm leading-relaxed text-graphite">
-        {truncate(description, 160)}
-      </p>
+        <div className="min-w-0 flex-1">
+          <Link href={`/ideas/${id}`} className="group block">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="font-display text-xl font-bold text-paper group-hover:text-signal">
+                {title}
+              </h2>
+              {category && (
+                <span className="shrink-0 rounded border border-line px-2.5 py-1 font-mono text-xs uppercase tracking-widest text-graphite">
+                  {category}
+                </span>
+              )}
+            </div>
 
-      {tags.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-line/60 px-2.5 py-1 font-mono text-xs text-graphite"
-            >
-              #{tag}
-            </span>
-          ))}
+            <p className="mt-3 text-sm leading-relaxed text-graphite">
+              {truncate(description, 160)}
+            </p>
+          </Link>
+
+          {tags.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-line/60 px-2.5 py-1 font-mono text-xs text-graphite"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-5 flex items-center justify-between font-mono text-xs text-graphite">
+            <span>{author.name}</span>
+            <span>{new Date(createdAt).toLocaleDateString()}</span>
+          </div>
         </div>
-      )}
-
-      <div className="mt-5 flex items-center justify-between font-mono text-xs text-graphite">
-        <span>{author.name}</span>
-        <span>{new Date(createdAt).toLocaleDateString()}</span>
       </div>
-    </Link>
+    </div>
   );
 }

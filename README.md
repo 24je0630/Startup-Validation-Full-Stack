@@ -116,3 +116,17 @@ src/
 prisma/
   schema.prisma     # Database schema (grows with each phase)
 ```
+
+## Voting
+
+- `POST /api/votes` — body `{ ideaId, value: 1 | -1 }`, auth required
+- One vote per user per idea (`@@unique([userId, ideaId])` on `Vote`).
+  Casting the same direction again **removes** the vote (toggle off);
+  casting the opposite direction flips it. The read-then-write runs inside
+  a `$transaction` so a duplicate double-click can't create two rows.
+- `GET /api/ideas` and `GET /api/ideas/[id]` include a `stats` object
+  (`score`, `upvotes`, `downvotes`, `userVote`) computed by
+  `src/lib/ideaStats.ts` in two batched `groupBy`/`findMany` queries — no
+  N+1 per card in the feed.
+- `<VoteButtons>` applies the vote optimistically, then reconciles with
+  whatever the server actually persisted; on error it rolls back.

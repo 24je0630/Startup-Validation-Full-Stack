@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/session';
+import { getIdeaStats } from '@/lib/ideaStats';
+import { VoteButtons } from '@/components/VoteButtons';
 
 export default async function IdeaDetailPage({
   params,
@@ -25,41 +28,63 @@ export default async function IdeaDetailPage({
     notFound();
   }
 
+  const currentUser = await getCurrentUser();
+  const stats = await getIdeaStats(idea.id, currentUser?.id);
+
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-6 py-16">
-      <Link href="/ideas" className="font-mono text-xs uppercase tracking-widest text-graphite hover:text-signal">
+      <Link
+        href="/ideas"
+        className="font-mono text-xs uppercase tracking-widest text-graphite hover:text-signal"
+      >
         ← All ideas
       </Link>
 
-      <div className="mt-6 flex items-start justify-between gap-4">
-        <h1 className="font-display text-3xl font-bold text-paper sm:text-4xl">
-          {idea.title}
-        </h1>
-        {idea.category && (
-          <span className="shrink-0 rounded border border-line px-2.5 py-1 font-mono text-xs uppercase tracking-widest text-graphite">
-            {idea.category}
-          </span>
-        )}
-      </div>
+      <div className="mt-6 flex items-start gap-5">
+        <VoteButtons
+          ideaId={idea.id}
+          initialScore={stats.score}
+          initialUserVote={stats.userVote}
+          isLoggedIn={Boolean(currentUser)}
+          size="lg"
+        />
 
-      <div className="mt-4 flex items-center gap-3 font-mono text-xs text-graphite">
-        <span>by {idea.author.name}</span>
-        <span>·</span>
-        <span>{new Date(idea.createdAt).toLocaleDateString()}</span>
-      </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="font-display text-3xl font-bold text-paper sm:text-4xl">
+              {idea.title}
+            </h1>
+            {idea.category && (
+              <span className="shrink-0 rounded border border-line px-2.5 py-1 font-mono text-xs uppercase tracking-widest text-graphite">
+                {idea.category}
+              </span>
+            )}
+          </div>
 
-      {idea.tags.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          {idea.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-line/60 px-2.5 py-1 font-mono text-xs text-graphite"
-            >
-              #{tag}
+          <div className="mt-4 flex items-center gap-3 font-mono text-xs text-graphite">
+            <span>by {idea.author.name}</span>
+            <span>·</span>
+            <span>{new Date(idea.createdAt).toLocaleDateString()}</span>
+            <span>·</span>
+            <span>
+              {stats.upvotes} up · {stats.downvotes} down
             </span>
-          ))}
+          </div>
+
+          {idea.tags.length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {idea.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-line/60 px-2.5 py-1 font-mono text-xs text-graphite"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="signal-divider my-8 w-full" />
 
@@ -67,8 +92,8 @@ export default async function IdeaDetailPage({
         {idea.description}
       </p>
 
-      <div className="mt-12 rounded border border-line px-6 py-8 text-center font-mono text-xs text-graphite">
-        voting · virtual investment · feedback — arriving in Phase 4 &amp; 5
+      <div className="mt-10 rounded border border-line px-6 py-8 text-center font-mono text-xs text-graphite">
+        virtual investment · feedback · team formation · predictions — arriving in later phases
       </div>
     </main>
   );

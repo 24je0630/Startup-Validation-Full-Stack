@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/session';
+import { getIdeaStats } from '@/lib/ideaStats';
 
 /** GET /api/ideas/[id] — public. */
 export async function GET(
@@ -24,5 +26,8 @@ export async function GET(
     return NextResponse.json({ error: 'Idea not found.' }, { status: 404 });
   }
 
-  return NextResponse.json({ idea });
+  const currentUser = await getCurrentUser();
+  const stats = await getIdeaStats(idea.id, currentUser?.id);
+
+  return NextResponse.json({ idea: { ...idea, stats } });
 }
