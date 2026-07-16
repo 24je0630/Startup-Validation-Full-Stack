@@ -18,7 +18,7 @@ This repo is being built in phases. See `docs/PROGRESS.md` (added once we
 have more than one phase to track) for what's done.
 
 - [x] Phase 1 — Project setup
-- [ ] Phase 2 — Authentication
+- [x] Phase 2 — Authentication
 - [ ] Phase 3 — Idea posting
 - [ ] Phase 4 — Voting & credits
 - [ ] Phase 5 — Feedback system
@@ -63,6 +63,29 @@ npm run dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000).
+
+## Authentication
+
+Credentials-based auth using signed JWTs in an **httpOnly cookie**
+(`session_token`), verified with [`jose`](https://github.com/panva/jose) so
+the same verification code works in both Route Handlers and Edge
+`middleware.ts`.
+
+- `POST /api/auth/signup` — create account, hash password (bcrypt), issue cookie
+- `POST /api/auth/login` — verify credentials, issue cookie
+- `POST /api/auth/logout` — clear cookie
+- `GET /api/auth/me` — return current user (or `null`)
+- `middleware.ts` — redirects unauthenticated requests to `/login` for
+  protected paths (currently `/dashboard/*`, `/ideas/new`)
+
+**Why JWT over NextAuth for this project:** the platform needs custom user
+fields from day one (virtual `credits` balance, and founder/backer roles in
+later phases) that live directly on our own `User` table, and every mutating
+action (voting, investing, joining a team) is a first-party API route rather
+than a third-party OAuth flow. A small, explicit JWT/cookie layer gives full
+control over the session shape with no adapter config, at the cost of us
+owning what NextAuth would otherwise handle (CSRF hardening, provider
+plumbing) — worth revisiting if/when social login is added.
 
 ## Folder structure
 

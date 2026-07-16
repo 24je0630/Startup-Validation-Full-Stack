@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-6">
@@ -15,11 +17,26 @@ export default function HomePage() {
         tell you whether there&apos;s real traction — before you spend a
         single week building.
       </p>
-      <div className="mt-10 flex items-center gap-4 font-mono text-xs text-graphite">
+      <div className="mt-10 flex flex-wrap items-center gap-4">
+        <Link
+          href="/signup"
+          className="rounded bg-signal px-5 py-2.5 font-medium text-ink transition hover:bg-signal-dim"
+        >
+          Create account
+        </Link>
+        <Link
+          href="/login"
+          className="rounded border border-line px-5 py-2.5 font-medium text-paper transition hover:border-signal"
+        >
+          Log in
+        </Link>
+      </div>
+
+      <div className="mt-8 flex items-center gap-4 font-mono text-xs text-graphite">
         <span className="rounded border border-line px-3 py-1">
-          phase 1 — project scaffold
+          phase 2 — authentication
         </span>
-        <span>auth · ideas · voting · credits · analytics — coming next</span>
+        <span>ideas · voting · credits · analytics — coming next</span>
       </div>
     </main>
   );
