@@ -4,6 +4,7 @@ export type IdeaStats = {
   score: number;
   upvotes: number;
   downvotes: number;
+  totalInvested: number;
   userVote: 1 | -1 | null;
 };
 
@@ -11,13 +12,14 @@ const EMPTY_STATS: IdeaStats = {
   score: 0,
   upvotes: 0,
   downvotes: 0,
+  totalInvested: 0,
   userVote: null,
 };
 
 /**
- * Computes vote aggregates for a batch of ideas in two queries total (not
- * one query per idea), so listing pages stay fast regardless of how many
- * ideas are on screen.
+ * Computes vote and investment aggregates for a batch of ideas in three
+ * queries total (not one query per idea), so listing pages stay fast
+ * regardless of how many ideas are on screen.
  */
 export async function getIdeaStatsMap(
   ideaIds: string[],
@@ -30,11 +32,16 @@ export async function getIdeaStatsMap(
     stats.set(id, { ...EMPTY_STATS });
   }
 
-  const [voteGroups, userVotes] = await Promise.all([
+  const [voteGroups, investmentGroups, userVotes] = await Promise.all([
     prisma.vote.groupBy({
       by: ['ideaId', 'value'],
       where: { ideaId: { in: ideaIds } },
       _count: true,
+    }),
+    prisma.investment.groupBy({
+      by: ['ideaId'],
+      where: { ideaId: { in: ideaIds } },
+      _sum: { amount: true },
     }),
     userId
       ? prisma.vote.findMany({
@@ -52,6 +59,11 @@ export async function getIdeaStatsMap(
   }
   for (const entry of stats.values()) {
     entry.score = entry.upvotes - entry.downvotes;
+  }
+
+  for (const group of investmentGroups) {
+    const entry = stats.get(group.ideaId);
+    if (entry) entry.totalInvested = group._sum.amount ?? 0;
   }
 
   for (const vote of userVotes) {

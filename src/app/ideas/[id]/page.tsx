@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { getIdeaStats } from '@/lib/ideaStats';
 import { VoteButtons } from '@/components/VoteButtons';
+import { InvestmentPanel } from '@/components/InvestmentPanel';
 
 export default async function IdeaDetailPage({
   params,
@@ -92,8 +93,17 @@ export default async function IdeaDetailPage({
         {idea.description}
       </p>
 
+      <div className="mt-10">
+        <InvestmentPanel
+          ideaId={idea.id}
+          initialTotalInvested={stats.totalInvested}
+          isLoggedIn={Boolean(currentUser)}
+          initialCredits={currentUser?.credits ?? null}
+        />
+      </div>
+
       <div className="mt-10 rounded border border-line px-6 py-8 text-center font-mono text-xs text-graphite">
-        virtual investment · feedback · team formation · predictions — arriving in later phases
+        feedback · team formation · predictions — arriving in later phases
       </div>
     </main>
   );

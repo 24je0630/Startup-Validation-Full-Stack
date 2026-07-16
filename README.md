@@ -20,7 +20,8 @@ have more than one phase to track) for what's done.
 - [x] Phase 1 — Project setup
 - [x] Phase 2 — Authentication
 - [x] Phase 3 — Idea posting
-- [ ] Phase 4 — Voting & credits
+- [x] Phase 4 — Voting & credits
+- [ ] Phase 5 — Feedback system
 - [ ] Phase 5 — Feedback system
 - [ ] Phase 6 — Team formation
 - [ ] Phase 7 — Prediction engine
@@ -103,6 +104,40 @@ plumbing) — worth revisiting if/when social login is added.
 - `/ideas/new` is protected by `middleware.ts` (redirects to `/login`) and by
   a server-side check in the API route itself
 
+## Voting
+
+- `POST /api/votes` — body `{ ideaId, value: 1 | -1 }`, auth required
+- One vote per user per idea (`@@unique([userId, ideaId])` on `Vote`).
+  Casting the same direction again **removes** the vote (toggle off);
+  casting the opposite direction flips it. The read-then-write runs inside
+  a `$transaction` so a duplicate double-click can't create two rows.
+- `GET /api/ideas` and `GET /api/ideas/[id]` include a `stats` object
+  (`score`, `upvotes`, `downvotes`, `totalInvested`, `userVote`) computed by
+  `src/lib/ideaStats.ts` in three batched `groupBy` queries — no N+1 per
+  card in the feed.
+- `<VoteButtons>` applies the vote optimistically, then reconciles with
+  whatever the server actually persisted; on error it rolls back.
+
+## Virtual investment
+
+- Every user starts with **1000 credits** (`User.credits`, was 100 in Phase 2
+  — bumped now that investment is live; existing rows keep whatever value
+  they already have, only the default for *new* signups changes).
+- `POST /api/invest` — body `{ ideaId, amount }`, auth required. The credit
+  deduction is a single conditional `updateMany` (`WHERE credits >= amount`)
+  inside a `$transaction`, so concurrent investment requests can't overdraw
+  a balance — no explicit row lock needed, since the check and the write are
+  the same atomic statement.
+- **Multiple investments per user per idea are allowed** (no unique
+  constraint on `Investment`), unlike votes. Rationale: investment is meant
+  to represent growing conviction over time — a backer might put in 50
+  credits today and another 100 next week — and each investment keeps its
+  own timestamp, which the Phase 8 "interest over time" chart needs. A
+  single-investment cap would force clunky "edit your investment" UX and
+  destroy that time-series signal.
+- `<InvestmentPanel>` shows live total funding and the user's remaining
+  balance, updated from the API response after each investment.
+
 ## Folder structure
 
 ```
@@ -116,17 +151,3 @@ src/
 prisma/
   schema.prisma     # Database schema (grows with each phase)
 ```
-
-## Voting
-
-- `POST /api/votes` — body `{ ideaId, value: 1 | -1 }`, auth required
-- One vote per user per idea (`@@unique([userId, ideaId])` on `Vote`).
-  Casting the same direction again **removes** the vote (toggle off);
-  casting the opposite direction flips it. The read-then-write runs inside
-  a `$transaction` so a duplicate double-click can't create two rows.
-- `GET /api/ideas` and `GET /api/ideas/[id]` include a `stats` object
-  (`score`, `upvotes`, `downvotes`, `userVote`) computed by
-  `src/lib/ideaStats.ts` in two batched `groupBy`/`findMany` queries — no
-  N+1 per card in the feed.
-- `<VoteButtons>` applies the vote optimistically, then reconciles with
-  whatever the server actually persisted; on error it rolls back.

@@ -16,12 +16,13 @@ model User {
   email     String   @unique
   name      String
   password  String // bcrypt hash — never store or return plaintext
-  credits   Int      @default(100) // starting virtual investment balance (Phase 4)
+  credits   Int      @default(1000) // starting virtual investment balance
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ideas Idea[]
-  votes Vote[]
+  ideas       Idea[]
+  votes       Vote[]
+  investments Investment[]
 
   @@map("users")
 }
@@ -39,7 +40,8 @@ model Idea {
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId String
 
-  votes Vote[]
+  votes       Vote[]
+  investments Investment[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -62,4 +64,24 @@ model Vote {
   @@unique([userId, ideaId])
   @@index([ideaId])
   @@map("votes")
+}
+
+model Investment {
+  id        String   @id @default(cuid())
+  amount    Int // whole virtual credits, always > 0
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId String
+
+  // Deliberately NOT unique on [userId, ideaId] — a backer can invest more
+  // than once as their conviction in an idea grows, and each investment
+  // keeps its own timestamp for the "interest over time" analytics in
+  // Phase 8. See README for the full rationale vs. a single-investment cap.
+  @@index([ideaId])
+  @@index([userId])
+  @@map("investments")
 }

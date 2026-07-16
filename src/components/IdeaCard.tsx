@@ -11,6 +11,7 @@ type IdeaCardProps = {
   author: { name: string };
   stats: {
     score: number;
+    totalInvested: number;
     userVote: 1 | -1 | null;
   };
   isLoggedIn: boolean;
@@ -75,7 +76,14 @@ export function IdeaCard({
 
           <div className="mt-5 flex items-center justify-between font-mono text-xs text-graphite">
             <span>{author.name}</span>
-            <span>{new Date(createdAt).toLocaleDateString()}</span>
+            <div className="flex items-center gap-4">
+              {stats.totalInvested > 0 && (
+                <span className="text-signal">
+                  {stats.totalInvested.toLocaleString()} credits funded
+                </span>
+              )}
+              <span>{new Date(createdAt).toLocaleDateString()}</span>
+            </div>
           </div>
         </div>
       </div>
