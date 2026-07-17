@@ -4,9 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { getIdeaStats } from '@/lib/ideaStats';
 import { getCommentTreeForIdea } from '@/lib/comments';
+import { getTeamMembers, getMyTeamStatus } from '@/lib/team';
 import { VoteButtons } from '@/components/VoteButtons';
 import { InvestmentPanel } from '@/components/InvestmentPanel';
 import { CommentSection } from '@/components/CommentSection';
+import { TeamPanel } from '@/components/TeamPanel';
 
 export default async function IdeaDetailPage({
   params,
@@ -32,10 +34,27 @@ export default async function IdeaDetailPage({
   }
 
   const currentUser = await getCurrentUser();
-  const [stats, comments] = await Promise.all([
+  const [stats, comments, members, myStatus] = await Promise.all([
     getIdeaStats(idea.id, currentUser?.id),
     getCommentTreeForIdea(idea.id),
+    getTeamMembers(idea.id),
+    getMyTeamStatus(idea.id, idea.author.id, currentUser?.id),
   ]);
+
+  // Only the founder needs the pending-requests queue — no reason to run
+  // this query (or leak requester identities) for anyone else.
+  const pendingRequests =
+    myStatus.kind === 'founder'
+      ? await prisma.joinRequest.findMany({
+          where: { ideaId: idea.id, status: 'PENDING' },
+          select: {
+            id: true,
+            createdAt: true,
+            user: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        })
+      : [];
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-6 py-16">
@@ -115,8 +134,17 @@ export default async function IdeaDetailPage({
         isLoggedIn={Boolean(currentUser)}
       />
 
+      <div className="mt-10">
+        <TeamPanel
+          ideaId={idea.id}
+          members={members}
+          myStatus={myStatus}
+          pendingRequests={pendingRequests}
+        />
+      </div>
+
       <div className="mt-10 rounded border border-line px-6 py-8 text-center font-mono text-xs text-graphite">
-        team formation · predictions — arriving in later phases
+        predictions — arriving in Phase 7
       </div>
     </main>
   );

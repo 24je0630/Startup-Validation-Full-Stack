@@ -22,7 +22,8 @@ have more than one phase to track) for what's done.
 - [x] Phase 3 — Idea posting
 - [x] Phase 4 — Voting & credits
 - [x] Phase 5 — Feedback system
-- [ ] Phase 6 — Team formation
+- [x] Phase 6 — Team formation
+- [ ] Phase 7 — Prediction engine
 - [ ] Phase 5 — Feedback system
 - [ ] Phase 6 — Team formation
 - [ ] Phase 7 — Prediction engine
@@ -156,6 +157,30 @@ plumbing) — worth revisiting if/when social login is added.
   control characters is just hygiene, not the security boundary
 - `<CommentThread>` recurses to arbitrary depth but stops adding visual
   indent past 4 levels so deep chains don't push content off-screen
+
+## Team formation
+
+- Creating an idea automatically makes the author a `TeamMember` with
+  `role: FOUNDER`, via a nested Prisma write on `POST /api/ideas` (atomic
+  with idea creation — no separate step that could fail independently).
+- `POST /api/join-request` — auth required. A user has exactly **one**
+  `JoinRequest` row per idea for its lifetime (`@@unique([userId, ideaId])`):
+  no existing row creates one as `PENDING`; a `REJECTED` row is reset back
+  to `PENDING` (re-apply after being turned down); a `PENDING` or
+  `ACCEPTED` row is left alone and the route returns `409`. This is what
+  "cannot send multiple requests" means here — duplicates are impossible
+  at the DB level, while re-application after rejection still works.
+- `GET /api/join-request?ideaId=...` — **founder only** (checked against
+  `idea.authorId`, `403` otherwise).
+- `POST /api/join-request/respond` — founder only, `{ requestId, action }`.
+  Rejects if the request isn't `PENDING` (already handled). Accepting flips
+  the request to `ACCEPTED` and creates the `TeamMember` row in the same
+  `$transaction`.
+- `GET /api/team?ideaId=...` — public.
+- `<TeamPanel>` shows the member list to everyone, a status-aware join
+  control (request / pending / re-request after rejection) to the current
+  viewer, and the pending-requests queue with accept/reject only when
+  `myStatus.kind === 'founder'`.
 
 ## Folder structure
 

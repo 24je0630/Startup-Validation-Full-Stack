@@ -24,6 +24,8 @@ model User {
   votes       Vote[]
   investments Investment[]
   comments    Comment[]
+  teamMemberships TeamMember[]
+  joinRequests    JoinRequest[]
 
   @@map("users")
 }
@@ -44,6 +46,8 @@ model Idea {
   votes       Vote[]
   investments Investment[]
   comments    Comment[]
+  teamMembers  TeamMember[]
+  joinRequests JoinRequest[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -108,4 +112,57 @@ model Comment {
   @@index([ideaId])
   @@index([parentId])
   @@map("comments")
+}
+
+enum TeamRole {
+  FOUNDER
+  MEMBER
+}
+
+enum JoinRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  role      TeamRole
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId String
+
+  // Hard guarantee against "joining twice" — backstops the app-level check
+  // the same way @@unique([userId, ideaId]) does for votes.
+  @@unique([userId, ideaId])
+  @@index([ideaId])
+  @@map("team_members")
+}
+
+model JoinRequest {
+  id        String             @id @default(cuid())
+  status    JoinRequestStatus  @default(PENDING)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId String
+
+  // A user has exactly one JoinRequest row per idea for its entire
+  // lifetime — its *status* changes (PENDING → ACCEPTED/REJECTED), it isn't
+  // replaced by a new row. This is what "cannot send multiple requests"
+  // means here: the unique constraint makes duplicate requests impossible
+  // at the DB level, while still allowing a user to re-apply after a
+  // rejection by resetting the same row back to PENDING (see POST
+  // /api/join-request). See README for the full rationale.
+  @@unique([userId, ideaId])
+  @@index([ideaId])
+  @@map("join_requests")
 }

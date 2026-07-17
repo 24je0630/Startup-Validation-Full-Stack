@@ -67,6 +67,11 @@ export async function POST(request: NextRequest) {
         category: category ?? null,
         tags,
         authorId: user.id,
+        // Nested write — Prisma wraps this in an implicit transaction, so
+        // the idea and its founder's team membership are created atomically.
+        teamMembers: {
+          create: { userId: user.id, role: 'FOUNDER' },
+        },
       },
       select: IDEA_LIST_SELECT,
     });
