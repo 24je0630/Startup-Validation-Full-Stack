@@ -21,7 +21,8 @@ have more than one phase to track) for what's done.
 - [x] Phase 2 — Authentication
 - [x] Phase 3 — Idea posting
 - [x] Phase 4 — Voting & credits
-- [ ] Phase 5 — Feedback system
+- [x] Phase 5 — Feedback system
+- [ ] Phase 6 — Team formation
 - [ ] Phase 5 — Feedback system
 - [ ] Phase 6 — Team formation
 - [ ] Phase 7 — Prediction engine
@@ -137,6 +138,24 @@ plumbing) — worth revisiting if/when social login is added.
   destroy that time-series signal.
 - `<InvestmentPanel>` shows live total funding and the user's remaining
   balance, updated from the API response after each investment.
+
+## Feedback (comments)
+
+- `POST /api/comments` — body `{ ideaId, content, parentId? }`, auth required
+- `GET /api/comments?ideaId=...` — public, returns the full nested reply tree
+  (also used directly by the idea detail Server Component via
+  `getCommentTreeForIdea()`, same pattern as `ideaStats.ts`)
+- `Comment.parentId` is a self-relation (`onDelete: Cascade`) — deleting a
+  comment removes its replies rather than orphaning them
+- Replies validate that `parentId` actually belongs to the same idea, so a
+  client can't stitch a reply onto an unrelated thread
+- Input is trimmed and length-capped (2000 chars) server-side; empty or
+  whitespace-only comments are rejected. Content is rendered as plain text
+  (`{comment.content}`, never `dangerouslySetInnerHTML`), so React's
+  automatic escaping is the real XSS defense — the server-side stripping of
+  control characters is just hygiene, not the security boundary
+- `<CommentThread>` recurses to arbitrary depth but stops adding visual
+  indent past 4 levels so deep chains don't push content off-screen
 
 ## Folder structure
 

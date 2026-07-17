@@ -37,6 +37,19 @@ export const createIdeaSchema = z.object({
     .default([]),
 });
 
+export const createCommentSchema = z.object({
+  ideaId: z.string().min(1),
+  // .trim() rejects whitespace-only "empty" comments; control characters
+  // are stripped separately in the route handler before this runs.
+  content: z
+    .string()
+    .trim()
+    .min(1, 'Comment cannot be empty')
+    .max(2000, 'Comment must be under 2000 characters'),
+  parentId: z.string().min(1).optional().nullable(),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateIdeaInput = z.infer<typeof createIdeaSchema>;
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;

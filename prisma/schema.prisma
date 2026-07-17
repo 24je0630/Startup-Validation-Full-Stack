@@ -23,6 +23,7 @@ model User {
   ideas       Idea[]
   votes       Vote[]
   investments Investment[]
+  comments    Comment[]
 
   @@map("users")
 }
@@ -42,6 +43,7 @@ model Idea {
 
   votes       Vote[]
   investments Investment[]
+  comments    Comment[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -84,4 +86,26 @@ model Investment {
   @@index([ideaId])
   @@index([userId])
   @@map("investments")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId String
+
+  // Self-relation for threaded replies. Deleting a comment cascades to its
+  // replies rather than orphaning them under a dangling parentId.
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId String?
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([ideaId])
+  @@index([parentId])
+  @@map("comments")
 }

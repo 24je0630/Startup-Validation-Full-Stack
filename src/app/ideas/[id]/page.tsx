@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { getIdeaStats } from '@/lib/ideaStats';
+import { getCommentTreeForIdea } from '@/lib/comments';
 import { VoteButtons } from '@/components/VoteButtons';
 import { InvestmentPanel } from '@/components/InvestmentPanel';
+import { CommentSection } from '@/components/CommentSection';
 
 export default async function IdeaDetailPage({
   params,
@@ -30,7 +32,10 @@ export default async function IdeaDetailPage({
   }
 
   const currentUser = await getCurrentUser();
-  const stats = await getIdeaStats(idea.id, currentUser?.id);
+  const [stats, comments] = await Promise.all([
+    getIdeaStats(idea.id, currentUser?.id),
+    getCommentTreeForIdea(idea.id),
+  ]);
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-6 py-16">
@@ -102,8 +107,16 @@ export default async function IdeaDetailPage({
         />
       </div>
 
+      <div className="signal-divider my-10 w-full" />
+
+      <CommentSection
+        ideaId={idea.id}
+        comments={comments}
+        isLoggedIn={Boolean(currentUser)}
+      />
+
       <div className="mt-10 rounded border border-line px-6 py-8 text-center font-mono text-xs text-graphite">
-        feedback · team formation · predictions — arriving in later phases
+        team formation · predictions — arriving in later phases
       </div>
     </main>
   );

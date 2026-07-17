@@ -40,9 +40,9 @@ export default function HomePage() {
 
       <div className="mt-8 flex items-center gap-4 font-mono text-xs text-graphite">
         <span className="rounded border border-line px-3 py-1">
-          phase 4 — voting &amp; virtual investment
+          phase 5 — feedback &amp; discussion
         </span>
-        <span>feedback · teams · predictions · analytics — coming next</span>
+        <span>teams · predictions · analytics — coming next</span>
       </div>
     </main>
   );
