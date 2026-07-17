@@ -26,6 +26,7 @@ model User {
   comments    Comment[]
   teamMemberships TeamMember[]
   joinRequests    JoinRequest[]
+  predictions     Prediction[]
 
   @@map("users")
 }
@@ -48,6 +49,7 @@ model Idea {
   comments    Comment[]
   teamMembers  TeamMember[]
   joinRequests JoinRequest[]
+  predictions  Prediction[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -68,7 +70,11 @@ model Vote {
   // One vote per user per idea. Also gives us the O(1) lookup the
   // create/update/toggle-off logic in POST /api/votes relies on.
   @@unique([userId, ideaId])
-  @@index([ideaId])
+  // Composite (not just ideaId) so the Phase 8 analytics date-range scans
+  // (WHERE ideaId = ? AND createdAt >= ?) hit the index directly — this
+  // subsumes plain ideaId lookups too via the leftmost-prefix rule, so it
+  // replaces rather than supplements the old single-column index.
+  @@index([ideaId, createdAt])
   @@map("votes")
 }
 
@@ -87,7 +93,7 @@ model Investment {
   // than once as their conviction in an idea grows, and each investment
   // keeps its own timestamp for the "interest over time" analytics in
   // Phase 8. See README for the full rationale vs. a single-investment cap.
-  @@index([ideaId])
+  @@index([ideaId, createdAt])
   @@index([userId])
   @@map("investments")
 }
@@ -109,7 +115,7 @@ model Comment {
   parentId String?
   replies  Comment[] @relation("CommentReplies")
 
-  @@index([ideaId])
+  @@index([ideaId, createdAt])
   @@index([parentId])
   @@map("comments")
 }
@@ -165,4 +171,27 @@ model JoinRequest {
   @@unique([userId, ideaId])
   @@index([ideaId])
   @@map("join_requests")
+}
+
+model Prediction {
+  id               String   @id @default(cuid())
+  marketScore      Int // 1–10, how large is the addressable market
+  feasibilityScore Int // 1–10, how buildable is this with reasonable resources
+  riskScore        Int // 1–10, how risky — 10 = highest risk (see lib/scoring.ts for how this is inverted)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId String
+
+  // One prediction per user per idea. Resubmitting updates this same row
+  // (see POST /api/predict) rather than creating a new one — unlike
+  // Investment, a prediction is a single current belief, not a
+  // time-series of separate actions.
+  @@unique([userId, ideaId])
+  @@index([ideaId])
+  @@map("predictions")
 }

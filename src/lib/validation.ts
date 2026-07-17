@@ -49,7 +49,17 @@ export const createCommentSchema = z.object({
   parentId: z.string().min(1).optional().nullable(),
 });
 
+const score1to10 = z.number().int().min(1, 'Must be at least 1').max(10, 'Must be at most 10');
+
+export const predictSchema = z.object({
+  ideaId: z.string().min(1),
+  marketScore: score1to10,
+  feasibilityScore: score1to10,
+  riskScore: score1to10,
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateIdeaInput = z.infer<typeof createIdeaSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type PredictInput = z.infer<typeof predictSchema>;

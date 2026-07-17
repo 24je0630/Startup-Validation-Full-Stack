@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { getIdeaStats } from '@/lib/ideaStats';
+import { getPredictionStats } from '@/lib/predictions';
 
 /** GET /api/ideas/[id] — public. */
 export async function GET(
@@ -27,7 +28,10 @@ export async function GET(
   }
 
   const currentUser = await getCurrentUser();
-  const stats = await getIdeaStats(idea.id, currentUser?.id);
+  const [stats, predictionStats] = await Promise.all([
+    getIdeaStats(idea.id, currentUser?.id),
+    getPredictionStats(idea.id, currentUser?.id),
+  ]);
 
-  return NextResponse.json({ idea: { ...idea, stats } });
+  return NextResponse.json({ idea: { ...idea, stats, predictionStats } });
 }

@@ -5,10 +5,12 @@ import { getCurrentUser } from '@/lib/session';
 import { getIdeaStats } from '@/lib/ideaStats';
 import { getCommentTreeForIdea } from '@/lib/comments';
 import { getTeamMembers, getMyTeamStatus } from '@/lib/team';
+import { getPredictionStats } from '@/lib/predictions';
 import { VoteButtons } from '@/components/VoteButtons';
 import { InvestmentPanel } from '@/components/InvestmentPanel';
 import { CommentSection } from '@/components/CommentSection';
 import { TeamPanel } from '@/components/TeamPanel';
+import { PredictionPanel } from '@/components/PredictionPanel';
 
 export default async function IdeaDetailPage({
   params,
@@ -34,11 +36,12 @@ export default async function IdeaDetailPage({
   }
 
   const currentUser = await getCurrentUser();
-  const [stats, comments, members, myStatus] = await Promise.all([
+  const [stats, comments, members, myStatus, predictionStats] = await Promise.all([
     getIdeaStats(idea.id, currentUser?.id),
     getCommentTreeForIdea(idea.id),
     getTeamMembers(idea.id),
     getMyTeamStatus(idea.id, idea.author.id, currentUser?.id),
+    getPredictionStats(idea.id, currentUser?.id),
   ]);
 
   // Only the founder needs the pending-requests queue — no reason to run
@@ -58,12 +61,22 @@ export default async function IdeaDetailPage({
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-6 py-16">
-      <Link
-        href="/ideas"
-        className="font-mono text-xs uppercase tracking-widest text-graphite hover:text-signal"
-      >
-        ← All ideas
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/ideas"
+          className="font-mono text-xs uppercase tracking-widest text-graphite hover:text-signal"
+        >
+          ← All ideas
+        </Link>
+        {myStatus.kind === 'founder' && (
+          <Link
+            href={`/ideas/${idea.id}/analytics`}
+            className="rounded border border-line px-3 py-1.5 font-mono text-xs uppercase tracking-widest text-graphite transition hover:border-signal hover:text-signal"
+          >
+            View analytics →
+          </Link>
+        )}
+      </div>
 
       <div className="mt-6 flex items-start gap-5">
         <VoteButtons
@@ -143,9 +156,14 @@ export default async function IdeaDetailPage({
         />
       </div>
 
-      <div className="mt-10 rounded border border-line px-6 py-8 text-center font-mono text-xs text-graphite">
-        predictions — arriving in Phase 7
+      <div className="mt-10">
+        <PredictionPanel
+          ideaId={idea.id}
+          initialStats={predictionStats}
+          isLoggedIn={Boolean(currentUser)}
+        />
       </div>
+
     </main>
   );
 }

@@ -40,9 +40,9 @@ export default function HomePage() {
 
       <div className="mt-8 flex items-center gap-4 font-mono text-xs text-graphite">
         <span className="rounded border border-line px-3 py-1">
-          phase 6 — team formation
+          phase 8 — analytics dashboard
         </span>
-        <span>predictions · analytics — coming next</span>
+        <span>polish · deployment — coming next</span>
       </div>
     </main>
   );

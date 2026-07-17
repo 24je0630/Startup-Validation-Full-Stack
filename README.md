@@ -23,7 +23,9 @@ have more than one phase to track) for what's done.
 - [x] Phase 4 — Voting & credits
 - [x] Phase 5 — Feedback system
 - [x] Phase 6 — Team formation
-- [ ] Phase 7 — Prediction engine
+- [x] Phase 7 — Prediction engine
+- [x] Phase 8 — Analytics dashboard
+- [ ] Phase 9 — Polish + deployment
 - [ ] Phase 5 — Feedback system
 - [ ] Phase 6 — Team formation
 - [ ] Phase 7 — Prediction engine
@@ -181,6 +183,73 @@ plumbing) — worth revisiting if/when social login is added.
   control (request / pending / re-request after rejection) to the current
   viewer, and the pending-requests queue with accept/reject only when
   `myStatus.kind === 'founder'`.
+
+## Prediction system
+
+- `POST /api/predict` — body `{ ideaId, marketScore, feasibilityScore, riskScore }`
+  (each 1–10), auth required. Uses `prisma.prediction.upsert` against
+  `@@unique([userId, ideaId])`, so resubmitting always **updates** the same
+  row — there's no code path that creates a second prediction for the same
+  user+idea.
+- `GET /api/predict?ideaId=...` — public, returns every individual
+  prediction (for a future distribution chart) plus the aggregates.
+- `GET /api/ideas` and `GET /api/ideas/[id]` include `predictionStats`
+  alongside `stats`, computed by `src/lib/predictions.ts` in the same
+  batched-`groupBy` style as `ideaStats.ts` — one query for all ideas on a
+  page, not one per idea.
+
+**Overall score formula** (`src/lib/scoring.ts`):
+
+```
+overall = market × 0.40 + feasibility × 0.35 + (11 − risk) × 0.25
+```
+
+All three inputs are 1–10 and the output is 1–10. Risk is **inverted** via
+`(11 − risk)` before weighting — a risk rating of 1 (very low risk)
+contributes near the maximum, a rating of 10 (very high risk) contributes
+near the minimum — so every component is on the same "higher is better"
+scale before the weights are applied; without the inversion, rating
+something as *more* risky would confusingly *increase* the overall score.
+Market and feasibility are weighted more heavily (40% + 35% vs. 25%)
+because at the idea-validation stage, market size and buildability are the
+stronger signals of whether something is worth pursuing — risk matters,
+but shouldn't drag down an otherwise strong idea as much as a small market
+or clear infeasibility would.
+
+## Analytics dashboard
+
+- `GET /api/analytics?ideaId=...` and `/ideas/[id]/analytics` — **founder
+  only**, not just "any logged-in user." Analytics expose granular
+  engagement timing (exactly when momentum is building or stalling) that a
+  founder may not want public or visible to competing ideas, and the
+  original brief specifically frames this as a founder tool ("Founders
+  should track interest over time, view analytics, identify traction
+  signals"). Non-founders (including logged-out visitors) are redirected
+  back to the public idea page; the API returns `403`.
+- `src/lib/analytics.ts` computes everything with **3 raw `GROUP BY`
+  queries** (one each for votes/investments/comments, using
+  `TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')` for a UTC-stable
+  day key) plus 2 cheap `aggregate()` calls for the pre-window baseline —
+  never by fetching every row and grouping in application code, so it
+  stays fast regardless of how much activity an idea has.
+- Indexes on `Vote`, `Investment`, and `Comment` were upgraded from
+  `@@index([ideaId])` to `@@index([ideaId, createdAt])` (Phase 8) so the
+  `WHERE ideaId = ? AND createdAt >= ?` date-range scans hit the index
+  directly — a strict upgrade, since the composite index still serves any
+  query that only filters by `ideaId`.
+- **Vote trend accuracy note:** votes can be flipped or removed (Phase 4),
+  and there's no separate append-only event log for them, so the vote trend
+  is the *current* votes table grouped by each vote's *original* cast day —
+  it always reconciles exactly to the current score, but a vote flipped
+  later is still attributed to when it was first cast, not when it changed.
+  **Investment trend has no such caveat** — investments are append-only, so
+  its cumulative sum is an exact historical record.
+- Window defaults to the last 30 days, or since the idea was posted if
+  younger than that; missing days are filled with zero so the charts render
+  continuous lines instead of gaps.
+- `/ideas/[id]/analytics/loading.tsx` provides a skeleton (Next.js's
+  built-in `loading.tsx` convention) shown automatically while the async
+  Server Component fetches.
 
 ## Folder structure
 

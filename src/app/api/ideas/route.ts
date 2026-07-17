@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { createIdeaSchema } from '@/lib/validation';
 import { getIdeaStatsMap } from '@/lib/ideaStats';
+import { getPredictionStatsMap } from '@/lib/predictions';
 
 const PAGE_SIZE = 20;
 
@@ -33,13 +34,18 @@ export async function GET(request: NextRequest) {
     prisma.idea.count({ where: { isPublic: true } }),
   ]);
 
-  const statsMap = await getIdeaStatsMap(
-    ideas.map((idea) => idea.id),
-    currentUser?.id
-  );
+  const ideaIds = ideas.map((idea) => idea.id);
+  const [statsMap, predictionStatsMap] = await Promise.all([
+    getIdeaStatsMap(ideaIds, currentUser?.id),
+    getPredictionStatsMap(ideaIds, currentUser?.id),
+  ]);
 
   return NextResponse.json({
-    ideas: ideas.map((idea) => ({ ...idea, stats: statsMap.get(idea.id) })),
+    ideas: ideas.map((idea) => ({
+      ...idea,
+      stats: statsMap.get(idea.id),
+      predictionStats: predictionStatsMap.get(idea.id),
+    })),
     pagination: {
       page,
       pageSize: PAGE_SIZE,
