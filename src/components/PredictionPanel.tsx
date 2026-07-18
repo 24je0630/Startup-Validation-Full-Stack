@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/ToastProvider';
 import type { PredictionStats } from '@/lib/predictions';
 
 type PredictionPanelProps = {
@@ -64,6 +65,7 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 }
 
 export function PredictionPanel({ ideaId, initialStats, isLoggedIn }: PredictionPanelProps) {
+  const { showToast } = useToast();
   const [stats, setStats] = useState(initialStats);
   const [market, setMarket] = useState(initialStats.myPrediction?.marketScore ?? DEFAULT_SCORE);
   const [feasibility, setFeasibility] = useState(
@@ -97,6 +99,7 @@ export function PredictionPanel({ ideaId, initialStats, isLoggedIn }: Prediction
       }
 
       setStats(data.stats);
+      showToast(hasSubmitted ? 'Prediction updated' : 'Prediction submitted');
       setHasSubmitted(true);
     } catch {
       setError('Network error. Please try again.');

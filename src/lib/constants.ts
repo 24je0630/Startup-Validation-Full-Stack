@@ -12,3 +12,7 @@ export const IDEA_CATEGORIES = [
 ] as const;
 
 export type IdeaCategory = (typeof IDEA_CATEGORIES)[number];
+
+// Shared by GET /api/ideas and the /ideas feed page so pagination stays
+// consistent between the two.
+export const IDEAS_PAGE_SIZE = 20;

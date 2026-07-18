@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CommentForm } from '@/components/CommentForm';
+import { useToast } from '@/components/ToastProvider';
 import type { CommentNode } from '@/lib/comments';
 
 type CommentThreadProps = {
@@ -24,6 +25,7 @@ export function CommentThread({
   depth = 0,
 }: CommentThreadProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [isReplying, setIsReplying] = useState(false);
   const shouldIndent = depth > 0 && depth <= MAX_INDENT_DEPTH;
 
@@ -68,6 +70,7 @@ export function CommentThread({
             onCancel={() => setIsReplying(false)}
             onSuccess={() => {
               setIsReplying(false);
+              showToast('Reply posted');
               // Comments are a low-frequency, non-latency-critical action —
               // re-fetching the Server Component tree keeps the nested
               // reply structure correct without duplicating tree-merge

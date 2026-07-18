@@ -57,12 +57,64 @@ export function buildCommentTree(
   return roots;
 }
 
-/** Fetches every comment for an idea (oldest first) as a nested reply tree. */
-export async function getCommentTreeForIdea(ideaId: string): Promise<CommentNode[]> {
-  const flat = await prisma.comment.findMany({
-    where: { ideaId },
-    select: COMMENT_SELECT,
-    orderBy: { createdAt: 'asc' },
-  });
-  return buildCommentTree(flat);
+const ROOT_PAGE_SIZE = 20;
+// Safety valve against pathological reply chains — real conversations are
+// nowhere near this deep, so this never fires in practice.
+const MAX_REPLY_LEVELS = 20;
+
+export type CommentPage = {
+  roots: CommentNode[];
+  hasMore: boolean;
+  totalRootCount: number;
+};
+
+/**
+ * Fetches one page of TOP-LEVEL comments (newest first, so a comment you
+ * just posted shows up on page 1 immediately) along with the FULL reply
+ * tree under each of those roots — not a flat row-count pagination, which
+ * would risk splitting a conversation thread across pages.
+ *
+ * Implementation: paginate the `parentId: null` rows, then walk downward
+ * level by level (comments whose parentId is in the previous level's ids)
+ * until a level comes back empty. This is bounded by actual reply DEPTH
+ * (typically shallow), not by how much total activity the idea has, and
+ * each level is one indexed query (`parentId` is indexed).
+ */
+export async function getCommentTreeForIdea(
+  ideaId: string,
+  { skip = 0, take = ROOT_PAGE_SIZE }: { skip?: number; take?: number } = {}
+): Promise<CommentPage> {
+  const [rootRows, totalRootCount] = await Promise.all([
+    prisma.comment.findMany({
+      where: { ideaId, parentId: null },
+      select: COMMENT_SELECT,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: take + 1, // fetch one extra to know if there's a next page
+    }),
+    prisma.comment.count({ where: { ideaId, parentId: null } }),
+  ]);
+
+  const hasMore = rootRows.length > take;
+  const pageRoots = hasMore ? rootRows.slice(0, take) : rootRows;
+
+  if (pageRoots.length === 0) {
+    return { roots: [], hasMore: false, totalRootCount };
+  }
+
+  const allNodes = [...pageRoots];
+  let frontier = pageRoots.map((r) => r.id);
+
+  for (let level = 0; level < MAX_REPLY_LEVELS && frontier.length > 0; level++) {
+    const nextLevel = await prisma.comment.findMany({
+      where: { parentId: { in: frontier } },
+      select: COMMENT_SELECT,
+      orderBy: { createdAt: 'asc' }, // chronological order within a thread
+    });
+    if (nextLevel.length === 0) break;
+    allNodes.push(...nextLevel);
+    frontier = nextLevel.map((c) => c.id);
+  }
+
+  return { roots: buildCommentTree(allNodes), hasMore, totalRootCount };
 }

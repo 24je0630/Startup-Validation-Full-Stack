@@ -3,6 +3,7 @@ import { z, ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { getIdeaStats } from '@/lib/ideaStats';
+import { notify } from '@/lib/notifications';
 
 const investSchema = z.object({
   ideaId: z.string().min(1),
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const idea = await prisma.idea.findUnique({
       where: { id: ideaId },
-      select: { id: true, isPublic: true },
+      select: { id: true, isPublic: true, title: true, authorId: true },
     });
     if (!idea || !idea.isPublic) {
       return NextResponse.json({ error: 'Idea not found.' }, { status: 404 });
@@ -56,6 +57,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    await notify({
+      userId: idea.authorId,
+      actorId: user.id,
+      message: `${user.name} invested ${amount.toLocaleString()} credits in "${idea.title}"`,
+      link: `/ideas/${idea.id}`,
+    });
 
     const stats = await getIdeaStats(ideaId, user.id);
     return NextResponse.json({ stats, remainingCredits: result.credits });

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ToastProvider';
 import type { TeamMemberInfo, MyTeamStatus } from '@/lib/team';
 
 type PendingRequest = {
@@ -34,6 +35,7 @@ function RoleBadge({ role }: { role: 'FOUNDER' | 'MEMBER' }) {
 
 function JoinRequestControl({ ideaId, myStatus }: { ideaId: string; myStatus: MyTeamStatus }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +53,7 @@ function JoinRequestControl({ ideaId, myStatus }: { ideaId: string; myStatus: My
         setError(data.error ?? 'Could not send your request.');
         return;
       }
+      showToast('Request sent to the founder');
       router.refresh();
     } catch {
       setError('Network error. Please try again.');
@@ -100,6 +103,7 @@ function JoinRequestControl({ ideaId, myStatus }: { ideaId: string; myStatus: My
 
 function PendingRequestRow({ request }: { request: PendingRequest }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState<'ACCEPT' | 'REJECT' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,6 +121,11 @@ function PendingRequestRow({ request }: { request: PendingRequest }) {
         setError(data.error ?? 'Could not process this request.');
         return;
       }
+      showToast(
+        action === 'ACCEPT'
+          ? `${request.user.name} added to the team`
+          : `Declined ${request.user.name}'s request`
+      );
       router.refresh();
     } catch {
       setError('Network error. Please try again.');

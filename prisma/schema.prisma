@@ -27,6 +27,7 @@ model User {
   teamMemberships TeamMember[]
   joinRequests    JoinRequest[]
   predictions     Prediction[]
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -194,4 +195,23 @@ model Prediction {
   @@unique([userId, ideaId])
   @@index([ideaId])
   @@map("predictions")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  // Where clicking the notification should navigate, e.g. /ideas/{id}.
+  // Nullable since not every notification necessarily points somewhere.
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // Two indexes for the two access patterns: the bell's unread count
+  // (userId + read) and the dropdown's recent list (userId + createdAt).
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

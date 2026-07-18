@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/ToastProvider';
 
 type InvestmentPanelProps = {
   ideaId: string;
@@ -16,17 +17,16 @@ export function InvestmentPanel({
   isLoggedIn,
   initialCredits,
 }: InvestmentPanelProps) {
+  const { showToast } = useToast();
   const [totalInvested, setTotalInvested] = useState(initialTotalInvested);
   const [credits, setCredits] = useState(initialCredits);
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
     const parsedAmount = Number(amount);
     if (!Number.isInteger(parsedAmount) || parsedAmount <= 0) {
@@ -55,7 +55,7 @@ export function InvestmentPanel({
       setTotalInvested(data.stats.totalInvested);
       setCredits(data.remainingCredits);
       setAmount('');
-      setSuccess(`Invested ${parsedAmount.toLocaleString()} credits.`);
+      showToast(`Invested ${parsedAmount.toLocaleString()} credits.`);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -116,11 +116,6 @@ export function InvestmentPanel({
       {error && (
         <p className="mt-3 rounded border border-alert/40 bg-alert/10 px-4 py-2 text-sm text-alert">
           {error}
-        </p>
-      )}
-      {success && (
-        <p className="mt-3 rounded border border-signal/40 bg-signal/10 px-4 py-2 text-sm text-signal">
-          {success}
         </p>
       )}
     </div>

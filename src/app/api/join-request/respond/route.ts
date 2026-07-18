@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import { notify } from '@/lib/notifications';
 
 const respondSchema = z.object({
   requestId: z.string().min(1),
@@ -20,7 +21,13 @@ export async function POST(request: NextRequest) {
 
     const joinRequest = await prisma.joinRequest.findUnique({
       where: { id: requestId },
-      select: { id: true, status: true, userId: true, ideaId: true, idea: { select: { authorId: true } } },
+      select: {
+        id: true,
+        status: true,
+        userId: true,
+        ideaId: true,
+        idea: { select: { authorId: true, title: true } },
+      },
     });
     if (!joinRequest) {
       return NextResponse.json({ error: 'Request not found.' }, { status: 404 });
@@ -43,6 +50,12 @@ export async function POST(request: NextRequest) {
         where: { id: requestId },
         data: { status: 'REJECTED' },
       });
+      await notify({
+        userId: joinRequest.userId,
+        actorId: user.id,
+        message: `Your request to join "${joinRequest.idea.title}" was declined.`,
+        link: `/ideas/${joinRequest.ideaId}`,
+      });
       return NextResponse.json({ success: true, status: 'REJECTED' });
     }
 
@@ -56,6 +69,13 @@ export async function POST(request: NextRequest) {
         data: { userId: joinRequest.userId, ideaId: joinRequest.ideaId, role: 'MEMBER' },
       }),
     ]);
+
+    await notify({
+      userId: joinRequest.userId,
+      actorId: user.id,
+      message: `Your request to join "${joinRequest.idea.title}" was accepted!`,
+      link: `/ideas/${joinRequest.ideaId}`,
+    });
 
     return NextResponse.json({ success: true, status: 'ACCEPTED' });
   } catch (error) {

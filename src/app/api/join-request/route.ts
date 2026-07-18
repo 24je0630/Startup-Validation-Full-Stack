@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import { notify } from '@/lib/notifications';
 
 const joinRequestSchema = z.object({ ideaId: z.string().min(1) });
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const idea = await prisma.idea.findUnique({
       where: { id: ideaId },
-      select: { id: true, isPublic: true, authorId: true },
+      select: { id: true, isPublic: true, authorId: true, title: true },
     });
     if (!idea || !idea.isPublic) {
       return NextResponse.json({ error: 'Idea not found.' }, { status: 404 });
@@ -79,6 +80,13 @@ export async function POST(request: NextRequest) {
     if (result.conflict) {
       return NextResponse.json({ error: result.conflict }, { status: 409 });
     }
+
+    await notify({
+      userId: idea.authorId,
+      actorId: user.id,
+      message: `${user.name} requested to join "${idea.title}"`,
+      link: `/ideas/${idea.id}`,
+    });
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {

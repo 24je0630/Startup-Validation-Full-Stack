@@ -5,8 +5,9 @@ import { getCurrentUser } from '@/lib/session';
 import { createIdeaSchema } from '@/lib/validation';
 import { getIdeaStatsMap } from '@/lib/ideaStats';
 import { getPredictionStatsMap } from '@/lib/predictions';
+import { IDEAS_PAGE_SIZE } from '@/lib/constants';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = IDEAS_PAGE_SIZE;
 
 const IDEA_LIST_SELECT = {
   id: true,

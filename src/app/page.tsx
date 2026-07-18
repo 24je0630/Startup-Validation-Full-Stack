@@ -38,11 +38,18 @@ export default function HomePage() {
         </Link>
       </div>
 
-      <div className="mt-8 flex items-center gap-4 font-mono text-xs text-graphite">
-        <span className="rounded border border-line px-3 py-1">
-          phase 8 — analytics dashboard
-        </span>
-        <span>polish · deployment — coming next</span>
+      <div className="mt-10 flex flex-wrap gap-6 font-mono text-xs uppercase tracking-widest text-graphite">
+        <span>votes</span>
+        <span>·</span>
+        <span>virtual investment</span>
+        <span>·</span>
+        <span>feedback</span>
+        <span>·</span>
+        <span>team formation</span>
+        <span>·</span>
+        <span>predictions</span>
+        <span>·</span>
+        <span>analytics</span>
       </div>
     </main>
   );

@@ -36,7 +36,7 @@ export default async function IdeaDetailPage({
   }
 
   const currentUser = await getCurrentUser();
-  const [stats, comments, members, myStatus, predictionStats] = await Promise.all([
+  const [stats, commentPage, members, myStatus, predictionStats] = await Promise.all([
     getIdeaStats(idea.id, currentUser?.id),
     getCommentTreeForIdea(idea.id),
     getTeamMembers(idea.id),
@@ -143,7 +143,8 @@ export default async function IdeaDetailPage({
 
       <CommentSection
         ideaId={idea.id}
-        comments={comments}
+        initialComments={commentPage.roots}
+        initialHasMore={commentPage.hasMore}
         isLoggedIn={Boolean(currentUser)}
       />
 
